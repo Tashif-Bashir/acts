@@ -50,7 +50,7 @@ print(f"Found gcovr version {gcovr_version[0]}.{gcovr_version[1]}")
 if gcovr_version < (5,):
     print("Consider upgrading to a newer gcovr version.")
 elif gcovr_version == (5, 1):
-    assert False and "Version 5.1 does not support parallel processing of gcov data"
+    raise RuntimeError("Version 5.1 does not support parallel processing of gcov data")
 elif gcovr_version >= (6,):
     extra_flags += ["--exclude-noncode-lines"]
 

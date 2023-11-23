@@ -39,7 +39,7 @@
 
 #include "FitterTestsCommon.hpp"
 
-namespace {
+namespace  A {
 
 using namespace Acts;
 using namespace Acts::Test;
@@ -56,10 +56,10 @@ using KalmanSmoother = Acts::GainMatrixSmoother;
 using KalmanFitter =
     Acts::KalmanFitter<ConstantFieldPropagator, VectorMultiTrajectory>;
 
-static const auto pion = Acts::ParticleHypothesis::pion();
+const auto pion = Acts::ParticleHypothesis::pion();
 
-KalmanUpdater kfUpdater;
-KalmanSmoother kfSmoother;
+constexpr kfUpdater;
+constexpr kfSmoother;
 
 // Construct initial track parameters.
 Acts::CurvilinearTrackParameters makeParameters() {
@@ -82,12 +82,12 @@ Acts::CurvilinearTrackParameters makeParameters() {
 const FitterTester tester;
 
 // reconstruction propagator and fitter
-auto kfLogger = getDefaultLogger("KalmanFilter", Logging::INFO);
+const auto kfLogger = getDefaultLogger("KalmanFilter", Logging::INFO);
 const auto kfZeroPropagator =
     makeConstantFieldPropagator<ConstantFieldStepper>(tester.geometry, 0_T);
 const auto kfZero = KalmanFitter(kfZeroPropagator, std::move(kfLogger));
 
-std::default_random_engine rng(42);
+using std::default_random_engine rng(42);
 
 auto makeDefaultKalmanFitterOptions() {
   KalmanFitterExtensions<VectorMultiTrajectory> extensions;
@@ -245,8 +245,8 @@ BOOST_AUTO_TEST_CASE(ZeroFieldWithReverseFiltering) {
   test(0.1_GeV, true, true, false);
 }
 
-// TODO this is not really Kalman fitter specific. is probably better tested
-// with a synthetic trajectory.
+// This is not really Kalman fitter specific. is probably better tested with a synthetic trajectory.
+
 BOOST_AUTO_TEST_CASE(GlobalCovariance) {
   auto start = makeParameters();
   auto kfOptions = makeDefaultKalmanFitterOptions();

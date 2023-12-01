@@ -46,7 +46,7 @@ class Portal : public std::enable_shared_from_this<Portal> {
   /// Constructor from surface w/o portal links
   ///
   /// @param surface is the representing surface
-  Portal(std::shared_ptr<RegularSurface> surface);
+  explicit Portal(std::shared_ptr<RegularSurface> surface);
 
  public:
   /// The volume links forward/backward with respect to the surface normal

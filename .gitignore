@@ -35,3 +35,7 @@ build*
 !.gitlab-ci.yml
 !.clang-tidy
 !.oclint
+
+
+acts\.sonargraph/
+ACTS\.sonargraph/

@@ -26,10 +26,10 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 22
-      - name: Set up Python 3.9 for gcovr
+      - name: Set up Python 3.7 for gcovr
         uses: actions/setup-python@v4
         with:
-          python-version: 3.9
+          python-version: 3.7
       - name: install gcovr 5.0
         run: |
           pip install gcovr==5.0 # 5.1 is not supported

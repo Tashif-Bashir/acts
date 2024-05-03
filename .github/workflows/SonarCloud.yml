@@ -47,6 +47,16 @@ jobs:
       - name: Collect coverage into one XML report
         run: |
           gcovr --sonarqube > coverage.xml
+          # Clear cahce
+      - name: Clear Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.sonar/cache
+          key: ${{ runner.os }}-sonar-cache-${{ hashFiles('**/sonar-project.properties') }}
+          restore-keys: |
+            sonar-cache-${{ runner.os }}-
+           # ......End...... 
       - name: Run sonar-scanner
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

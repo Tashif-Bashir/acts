@@ -26,6 +26,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: 17
+          distribution: 'oracle'  
       - name: Set up Python 3.9 for gcovr
         uses: actions/setup-python@v4
         with:

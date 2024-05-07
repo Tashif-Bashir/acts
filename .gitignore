@@ -30,8 +30,12 @@ build*
 
 # dont ignore hidden configs
 !.clang-format
-!.github/**
+!.github/
 !.gitignore
 !.gitlab-ci.yml
 !.clang-tidy
 !.oclint
+
+
+acts\.sonargraph/
+ACTS\.sonargraph/

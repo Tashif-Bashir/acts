@@ -15,7 +15,7 @@ jobs:
     name: Sonar-Ubuntu
     runs-on: ubuntu-latest
     env:
-      SONAR_SCANNER_VERSION: 4.8.1.3023
+      SONAR_SCANNER_VERSION: 5.0
       SONAR_SERVER_URL: "https://sonarcloud.io"
       BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory # Directory where build-wrapper output will be placed
     steps:
@@ -34,7 +34,7 @@ jobs:
         run: |
           pip install gcovr==5.0 # 5.1 is not supported
       - name: Install sonar-scanner and build-wrapper
-        uses: SonarSource/sonarcloud-github-c-cpp@v5
+        uses: SonarSource/sonarcloud-github-c-cpp@v2
       - name: Run build-wrapper
         run: |
           mkdir build-linux

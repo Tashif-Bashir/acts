@@ -15,7 +15,7 @@ jobs:
     name: Sonar-Ubuntu
     runs-on: ubuntu-latest
     env:
-      SONAR_SCANNER_VERSION: 4.8.1.3023
+      SONAR_SCANNER_VERSION: 5.0
       SONAR_SERVER_URL: "https://sonarcloud.io"
       BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory # Directory where build-wrapper output will be placed
     steps:
@@ -27,15 +27,15 @@ jobs:
         with:
           java-version: 17
           distribution: 'oracle'
-      - name: Set up Python 3.8 for gcovr
+      - name: Set up Python 3.9 for gcovr
         uses: actions/setup-python@v4
         with:
-          python-version: 3.8
+          python-version: 3.9
       - name: install gcovr 5.0
         run: |
           pip install gcovr==5.0 # 5.1 is not supported
       - name: Install sonar-scanner and build-wrapper
-        uses: SonarSource/sonarcloud-github-c-cpp@v1
+        uses: SonarSource/sonarcloud-github-c-cpp@v2
       - name: Run build-wrapper
         run: |
           mkdir build-linux
@@ -47,23 +47,6 @@ jobs:
       - name: Collect coverage into one XML report
         run: |
           gcovr --sonarqube > coverage.xml
-          # Clear cahce
-      - name: Clear Cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.sonar/cache
-          key: ${{ runner.os }}-sonar-cache-${{ hashFiles('**/sonar-project.properties') }}
-          restore-keys: |
-            sonar-cache-${{ runner.os }}-
-           # ......End...... 
-
-           #Point to jdk path
-      - name: Set JAVA_HOME
-        run: |
-         echo "JAVA_HOME=/opt/hostedtoolcache/Java_Oracle_jdk/17/x64" >> $GITHUB_ENV
-        shell: bash
-        
           
       - name: Run sonar-scanner
         env:
@@ -71,6 +54,5 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           sonar-scanner \
-            -Dsonar.javaHome=/opt/hostedtoolcache/Java_Oracle_jdk/17/x64
             --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}" \
             --define sonar.coverageReportPaths=coverage.xml

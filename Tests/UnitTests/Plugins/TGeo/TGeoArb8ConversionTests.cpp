@@ -33,12 +33,7 @@
 #include "TGeoVolume.h"
 #include "TView.h"
 
-namespace bdata = boost::unit_test::data;
-namespace tt = boost::test_tools;
-
-namespace Acts {
-
-namespace Test {
+namespace Acts::Test {
 
 GeometryContext tgContext = GeometryContext();
 
@@ -78,7 +73,7 @@ BOOST_AUTO_TEST_CASE(TGeoArb8_to_PlaneSurface) {
   std::vector<std::string> allowedAxes = {"XY*", "xy*", "Xy*", "xY*",
                                           "YX*", "yx*", "Yx*", "yX*"};
 
-  size_t iarb8 = 0;
+  std::size_t iarb8 = 0;
   for (const auto &axes : allowedAxes) {
     auto [plane, thickness] = TGeoSurfaceConverter::toSurface(
         *vol->GetShape(), *gGeoIdentity, axes, 1);
@@ -118,6 +113,4 @@ BOOST_AUTO_TEST_CASE(TGeoArb8_to_PlaneSurface) {
   }
 }
 
-}  // namespace Test
-
-}  // namespace Acts
+}  // namespace Acts::Test

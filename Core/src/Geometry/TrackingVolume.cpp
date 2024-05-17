@@ -9,7 +9,6 @@
 #include "Acts/Geometry/TrackingVolume.hpp"
 
 #include "Acts/Definitions/Direction.hpp"
-#include "Acts/Definitions/Tolerance.hpp"
 #include "Acts/Geometry/GeometryIdentifier.hpp"
 #include "Acts/Geometry/GlueVolumesDescriptor.hpp"
 #include "Acts/Geometry/VolumeBounds.hpp"
@@ -20,82 +19,54 @@
 #include "Acts/Surfaces/RegularSurface.hpp"
 #include "Acts/Surfaces/Surface.hpp"
 #include "Acts/Utilities/BinningType.hpp"
-#include "Acts/Utilities/Frustum.hpp"
-#include "Acts/Utilities/Ray.hpp"
+#include "Acts/Utilities/TransformRange.hpp"
 
 #include <algorithm>
-#include <array>
-#include <functional>
 #include <ostream>
 #include <string>
 #include <tuple>
-#include <type_traits>
 #include <utility>
 
 namespace Acts {
 class ISurfaceMaterial;
-}  // namespace Acts
-
-Acts::TrackingVolume::TrackingVolume(
-    const Transform3& transform, VolumeBoundsPtr volbounds,
-    const std::shared_ptr<const TrackingVolumeArray>& containedVolumeArray,
-    const std::string& volumeName)
-    : Volume(transform, std::move(volbounds)),
-      m_volumeMaterial(nullptr),
-      m_boundarySurfaces(),
-      m_confinedLayers(nullptr),
-      m_confinedVolumes(containedVolumeArray),
-      m_name(volumeName) {
-  createBoundarySurfaces();
-  interlinkLayers();
-}
 
 // constructor for arguments
-Acts::TrackingVolume::TrackingVolume(
-    const Transform3& transform, VolumeBoundsPtr volumeBounds,
+TrackingVolume::TrackingVolume(
+    const Transform3& transform,
+    std::shared_ptr<const VolumeBounds> volumeBounds,
     std::shared_ptr<const IVolumeMaterial> volumeMaterial,
     std::unique_ptr<const LayerArray> staticLayerArray,
     std::shared_ptr<const TrackingVolumeArray> containedVolumeArray,
     MutableTrackingVolumeVector denseVolumeVector,
     const std::string& volumeName)
     : Volume(transform, std::move(volumeBounds)),
-      m_volumeMaterial(std::move(volumeMaterial)),
       m_confinedLayers(std::move(staticLayerArray)),
       m_confinedVolumes(std::move(containedVolumeArray)),
       m_confinedDenseVolumes({}),
+      m_volumeMaterial(std::move(volumeMaterial)),
       m_name(volumeName) {
   createBoundarySurfaces();
   interlinkLayers();
   connectDenseBoundarySurfaces(denseVolumeVector);
 }
 
-// constructor for arguments
-Acts::TrackingVolume::TrackingVolume(
-    const Transform3& transform, VolumeBoundsPtr volbounds,
-    std::vector<std::unique_ptr<Volume::BoundingBox>> boxStore,
-    std::vector<std::unique_ptr<const Volume>> descendants,
-    const Volume::BoundingBox* top,
-    std::shared_ptr<const IVolumeMaterial> volumeMaterial,
-    const std::string& volumeName)
-    : Volume(transform, std::move(volbounds)),
-      m_volumeMaterial(std::move(volumeMaterial)),
-      m_name(volumeName),
-      m_descendantVolumes(std::move(descendants)),
-      m_bvhTop(top) {
-  createBoundarySurfaces();
-  // we take a copy of the unique box pointers, but we want to
-  // store them as consts.
-  for (auto& uptr : boxStore) {
-    m_boundingBoxes.push_back(
-        std::unique_ptr<Volume::BoundingBox>(uptr.release()));
-  }
-}
+TrackingVolume::TrackingVolume(const Volume& volume,
+                               const std::string& volumeName)
+    : TrackingVolume(volume.transform(), volume.volumeBoundsPtr(), nullptr,
+                     volumeName) {}
 
-Acts::TrackingVolume::~TrackingVolume() {
+TrackingVolume::TrackingVolume(
+    const Transform3& transform, std::shared_ptr<const VolumeBounds> volbounds,
+    const std::shared_ptr<const TrackingVolumeArray>& containedVolumeArray,
+    const std::string& volumeName)
+    : TrackingVolume(transform, std::move(volbounds), nullptr, nullptr,
+                     containedVolumeArray, {}, volumeName) {}
+
+TrackingVolume::~TrackingVolume() {
   delete m_glueVolumeDescriptor;
 }
 
-const Acts::TrackingVolume* Acts::TrackingVolume::lowestTrackingVolume(
+const TrackingVolume* TrackingVolume::lowestTrackingVolume(
     const GeometryContext& /*gctx*/, const Vector3& position,
     const double tol) const {
   // confined static volumes - highest hierarchy
@@ -116,12 +87,11 @@ const Acts::TrackingVolume* Acts::TrackingVolume::lowestTrackingVolume(
   return this;
 }
 
-const Acts::TrackingVolumeBoundaries& Acts::TrackingVolume::boundarySurfaces()
-    const {
+const TrackingVolumeBoundaries& TrackingVolume::boundarySurfaces() const {
   return (m_boundarySurfaces);
 }
 
-void Acts::TrackingVolume::connectDenseBoundarySurfaces(
+void TrackingVolume::connectDenseBoundarySurfaces(
     MutableTrackingVolumeVector& confinedDenseVolumes) {
   if (!confinedDenseVolumes.empty()) {
     Direction dir = Direction::Positive;
@@ -129,7 +99,7 @@ void Acts::TrackingVolume::connectDenseBoundarySurfaces(
     for (auto& confDenseVol : confinedDenseVolumes) {
       // Walk over each boundary surface of the volume
       auto& boundSur = confDenseVol->boundarySurfaces();
-      for (unsigned int i = 0; i < boundSur.size(); i++) {
+      for (std::size_t i = 0; i < boundSur.size(); i++) {
         // Skip empty entries since we do not know the shape of the dense volume
         // and therewith the used indices
         if (boundSur.at(i) == nullptr) {
@@ -154,7 +124,8 @@ void Acts::TrackingVolume::connectDenseBoundarySurfaces(
         }
 
         // Update the boundary
-        confDenseVol->updateBoundarySurface((BoundarySurfaceFace)i, mutableBs);
+        confDenseVol->updateBoundarySurface(static_cast<BoundarySurfaceFace>(i),
+                                            mutableBs);
       }
       // Store the volume
       m_confinedDenseVolumes.push_back(std::move(confDenseVol));
@@ -162,7 +133,7 @@ void Acts::TrackingVolume::connectDenseBoundarySurfaces(
   }
 }
 
-void Acts::TrackingVolume::createBoundarySurfaces() {
+void TrackingVolume::createBoundarySurfaces() {
   using Boundary = BoundarySurfaceT<TrackingVolume>;
 
   // Transform Surfaces To BoundarySurfaces
@@ -172,20 +143,20 @@ void Acts::TrackingVolume::createBoundarySurfaces() {
   for (auto& osf : orientedSurfaces) {
     TrackingVolume* opposite = nullptr;
     TrackingVolume* along = nullptr;
-    if (osf.second == Direction::Negative) {
+    if (osf.direction == Direction::OppositeNormal) {
       opposite = this;
     } else {
       along = this;
     }
     m_boundarySurfaces.push_back(std::make_shared<const Boundary>(
-        std::move(osf.first), opposite, along));
+        std::move(osf.surface), opposite, along));
   }
 }
 
-void Acts::TrackingVolume::glueTrackingVolume(const GeometryContext& gctx,
-                                              BoundarySurfaceFace bsfMine,
-                                              TrackingVolume* neighbor,
-                                              BoundarySurfaceFace bsfNeighbor) {
+void TrackingVolume::glueTrackingVolume(const GeometryContext& gctx,
+                                        BoundarySurfaceFace bsfMine,
+                                        TrackingVolume* neighbor,
+                                        BoundarySurfaceFace bsfNeighbor) {
   // Find the connection of the two tracking volumes: binR returns the center
   // except for cylindrical volumes
   Vector3 bPosition(binningPosition(gctx, binR));
@@ -225,7 +196,7 @@ void Acts::TrackingVolume::glueTrackingVolume(const GeometryContext& gctx,
   }
 }
 
-void Acts::TrackingVolume::glueTrackingVolumes(
+void TrackingVolume::glueTrackingVolumes(
     const GeometryContext& gctx, BoundarySurfaceFace bsfMine,
     const std::shared_ptr<TrackingVolumeArray>& neighbors,
     BoundarySurfaceFace bsfNeighbor) {
@@ -264,7 +235,7 @@ void Acts::TrackingVolume::glueTrackingVolumes(
   }
 }
 
-void Acts::TrackingVolume::assignBoundaryMaterial(
+void TrackingVolume::assignBoundaryMaterial(
     std::shared_ptr<const ISurfaceMaterial> surfaceMaterial,
     BoundarySurfaceFace bsFace) {
   auto bSurface = m_boundarySurfaces.at(bsFace);
@@ -273,7 +244,7 @@ void Acts::TrackingVolume::assignBoundaryMaterial(
   surface->assignSurfaceMaterial(std::move(surfaceMaterial));
 }
 
-void Acts::TrackingVolume::updateBoundarySurface(
+void TrackingVolume::updateBoundarySurface(
     BoundarySurfaceFace bsf,
     std::shared_ptr<const BoundarySurfaceT<TrackingVolume>> bs,
     bool checkmaterial) {
@@ -291,20 +262,19 @@ void Acts::TrackingVolume::updateBoundarySurface(
   m_boundarySurfaces.at(bsf) = std::move(bs);
 }
 
-void Acts::TrackingVolume::registerGlueVolumeDescriptor(
-    GlueVolumesDescriptor* gvd) {
+void TrackingVolume::registerGlueVolumeDescriptor(GlueVolumesDescriptor* gvd) {
   delete m_glueVolumeDescriptor;
   m_glueVolumeDescriptor = gvd;
 }
 
-Acts::GlueVolumesDescriptor& Acts::TrackingVolume::glueVolumesDescriptor() {
+GlueVolumesDescriptor& TrackingVolume::glueVolumesDescriptor() {
   if (m_glueVolumeDescriptor == nullptr) {
     m_glueVolumeDescriptor = new GlueVolumesDescriptor;
   }
   return (*m_glueVolumeDescriptor);
 }
 
-void Acts::TrackingVolume::synchronizeLayers(double envelope) const {
+void TrackingVolume::synchronizeLayers(double envelope) const {
   // case a : Layers exist
   // msgstream << MSG::VERBOSE << "  -> synchronizing Layer dimensions of
   // TrackingVolume '" << volumeName() << "'." << endreq;
@@ -338,7 +308,7 @@ void Acts::TrackingVolume::synchronizeLayers(double envelope) const {
   }
 }
 
-void Acts::TrackingVolume::interlinkLayers() {
+void TrackingVolume::interlinkLayers() {
   if (m_confinedLayers) {
     auto& layers = m_confinedLayers->arrayObjects();
 
@@ -368,7 +338,7 @@ void Acts::TrackingVolume::interlinkLayers() {
   }
 }
 
-void Acts::TrackingVolume::closeGeometry(
+void TrackingVolume::closeGeometry(
     const IMaterialDecorator* materialDecorator,
     std::unordered_map<GeometryIdentifier, const TrackingVolume*>& volumeMap,
     std::size_t& vol, const GeometryIdentifierHook& hook,
@@ -389,7 +359,7 @@ void Acts::TrackingVolume::closeGeometry(
   if (thisVolume->volumeMaterial() == nullptr &&
       thisVolume->motherVolume() != nullptr &&
       thisVolume->motherVolume()->volumeMaterial() != nullptr) {
-    auto protoMaterial = dynamic_cast<const Acts::ProtoVolumeMaterial*>(
+    auto protoMaterial = dynamic_cast<const ProtoVolumeMaterial*>(
         thisVolume->motherVolume()->volumeMaterial());
     if (protoMaterial == nullptr) {
       thisVolume->assignVolumeMaterial(
@@ -429,23 +399,6 @@ void Acts::TrackingVolume::closeGeometry(
         mutableLayerPtr->closeGeometry(materialDecorator, layerID, hook,
                                        logger);
       }
-    } else if (m_bvhTop != nullptr) {
-      GeometryIdentifier::Value isurface = 0;
-      for (const auto& descVol : m_descendantVolumes) {
-        // Attempt to cast to AbstractVolume: only one we'll handle
-        const AbstractVolume* avol =
-            dynamic_cast<const AbstractVolume*>(descVol.get());
-        if (avol != nullptr) {
-          const auto& bndSrf = avol->boundarySurfaces();
-          for (const auto& bnd : bndSrf) {
-            const auto& srf = bnd->surfaceRepresentation();
-            RegularSurface* mutableSurfcePtr =
-                const_cast<RegularSurface*>(&srf);
-            auto geoID = GeometryIdentifier(volumeID).setSensitive(++isurface);
-            mutableSurfcePtr->assignGeometryId(geoID);
-          }
-        }
-      }
     }
   } else {
     // B) this is a container volume, go through sub volume
@@ -471,19 +424,20 @@ void Acts::TrackingVolume::closeGeometry(
 }
 
 // Returns the boundary surfaces ordered in probability to hit them based on
-boost::container::small_vector<Acts::BoundaryIntersection, 4>
-Acts::TrackingVolume::compatibleBoundaries(
-    const GeometryContext& gctx, const Vector3& position,
-    const Vector3& direction, const NavigationOptions<Surface>& options,
-    const Logger& logger) const {
+boost::container::small_vector<BoundaryIntersection, 4>
+TrackingVolume::compatibleBoundaries(const GeometryContext& gctx,
+                                     const Vector3& position,
+                                     const Vector3& direction,
+                                     const NavigationOptions<Surface>& options,
+                                     const Logger& logger) const {
   ACTS_VERBOSE("Finding compatibleBoundaries");
   // Loop over boundarySurfaces and calculate the intersection
   auto excludeObject = options.startObject;
-  boost::container::small_vector<Acts::BoundaryIntersection, 4> bIntersections;
+  boost::container::small_vector<BoundaryIntersection, 4> bIntersections;
 
   // The Limits: current, path & overstepping
-  double pLimit = options.pathLimit;
-  double oLimit = 0;
+  double nearLimit = 0;
+  double farLimit = options.farLimit;
 
   // Helper function to test intersection
   auto checkIntersection =
@@ -496,38 +450,32 @@ Acts::TrackingVolume::compatibleBoundaries(
 
       if (options.forceIntersectBoundaries) {
         const bool coCriterion =
-            std::abs(sIntersection.pathLength()) < std::abs(oLimit);
+            std::abs(sIntersection.pathLength()) < std::abs(nearLimit);
         ACTS_VERBOSE("Forcing intersection with surface "
                      << bSurface->surfaceRepresentation().geometryId());
         if (coCriterion) {
           ACTS_VERBOSE("Intersection forced successfully ");
           ACTS_VERBOSE("- intersection path length "
                        << std::abs(sIntersection.pathLength())
-                       << " < overstep limit " << std::abs(oLimit));
-          return BoundaryIntersection(sIntersection.intersection(), bSurface,
-                                      sIntersection.object(),
-                                      sIntersection.index());
+                       << " < overstep limit " << std::abs(nearLimit));
+          return BoundaryIntersection(sIntersection, bSurface);
         }
         ACTS_VERBOSE("Can't force intersection: ");
         ACTS_VERBOSE("- intersection path length "
                      << std::abs(sIntersection.pathLength())
-                     << " > overstep limit " << std::abs(oLimit));
+                     << " > overstep limit " << std::abs(nearLimit));
       }
 
       ACTS_VERBOSE("Check intersection with surface "
                    << bSurface->surfaceRepresentation().geometryId());
-      if (detail::checkIntersection<decltype(sIntersection.intersection()),
-                                    decltype(logger)>(
-              sIntersection.intersection(), pLimit, oLimit,
-              s_onSurfaceTolerance, logger)) {
-        return BoundaryIntersection(sIntersection.intersection(), bSurface,
-                                    sIntersection.object(),
-                                    sIntersection.index());
+      if (detail::checkIntersection(sIntersection.intersection(), nearLimit,
+                                    farLimit, logger)) {
+        return BoundaryIntersection(sIntersection, bSurface);
       }
     }
 
     ACTS_VERBOSE("No intersection accepted");
-    return BoundaryIntersection::invalid();
+    return BoundaryIntersection(SurfaceIntersection::invalid(), bSurface);
   };
 
   /// Helper function to process boundary surfaces
@@ -548,7 +496,7 @@ Acts::TrackingVolume::compatibleBoundaries(
                                                 options.boundaryCheck);
         // Intersect and continue
         auto bIntersection = checkIntersection(bCandidate, bsIter.get());
-        if (bIntersection) {
+        if (bIntersection.first) {
           ACTS_VERBOSE(" - Proceed with surface");
           bIntersections.push_back(bIntersection);
         } else {
@@ -587,18 +535,18 @@ Acts::TrackingVolume::compatibleBoundaries(
   };
 
   std::sort(bIntersections.begin(), bIntersections.end(),
-            [&](const auto& a, const auto& b) {
-              return comparator(a.pathLength(), b.pathLength());
+            [&](const BoundaryIntersection& a, const BoundaryIntersection& b) {
+              return comparator(a.first.pathLength(), b.first.pathLength());
             });
   return bIntersections;
 }
 
-boost::container::small_vector<Acts::LayerIntersection, 10>
-Acts::TrackingVolume::compatibleLayers(
+boost::container::small_vector<LayerIntersection, 10>
+TrackingVolume::compatibleLayers(
     const GeometryContext& gctx, const Vector3& position,
     const Vector3& direction, const NavigationOptions<Layer>& options) const {
   // the layer intersections which are valid
-  boost::container::small_vector<Acts::LayerIntersection, 10> lIntersections;
+  boost::container::small_vector<LayerIntersection, 10> lIntersections;
 
   // the confinedLayers
   if (m_confinedLayers != nullptr) {
@@ -618,14 +566,11 @@ Acts::TrackingVolume::compatibleLayers(
         auto atIntersection =
             tLayer->surfaceOnApproach(gctx, position, direction, options);
         auto path = atIntersection.pathLength();
-        bool withinLimit = std::abs(path) <= std::abs(options.pathLimit);
+        bool withinLimit = std::abs(path) <= std::abs(options.farLimit);
         // Intersection is ok - take it (move to surface on approach)
-        if (atIntersection &&
-            (atIntersection.object() != options.targetSurface) && withinLimit) {
+        if (atIntersection && withinLimit) {
           // create a layer intersection
-          lIntersections.push_back(LayerIntersection(
-              atIntersection.intersection(), tLayer, atIntersection.object(),
-              atIntersection.index()));
+          lIntersections.push_back(LayerIntersection(atIntersection, tLayer));
         }
       }
       // move to next one or break because you reached the end layer
@@ -634,89 +579,85 @@ Acts::TrackingVolume::compatibleLayers(
                    : tLayer->nextLayer(gctx, position, direction);
     }
     std::sort(lIntersections.begin(), lIntersections.end(),
-              LayerIntersection::forwardOrder);
+              [](const LayerIntersection& a, const LayerIntersection& b) {
+                return SurfaceIntersection::pathLengthOrder(a.first, b.first);
+              });
   }
   // and return
   return lIntersections;
 }
 
-namespace {
-template <typename T>
-std::vector<const Acts::Volume*> intersectSearchHierarchy(
-    const T obj, const Acts::Volume::BoundingBox* lnode) {
-  std::vector<const Acts::Volume*> hits;
-  hits.reserve(20);  // arbitrary
-  do {
-    if (lnode->intersect(obj)) {
-      if (lnode->hasEntity()) {
-        // found primitive
-        // check obb to limit false positives
-        const Acts::Volume* vol = lnode->entity();
-        const auto& obb = vol->orientedBoundingBox();
-        if (obb.intersect(obj.transformed(vol->itransform()))) {
-          hits.push_back(vol);
-        }
-        // we skip in any case, whether we actually hit the OBB or not
-        lnode = lnode->getSkip();
-      } else {
-        // go over children
-        lnode = lnode->getLeftChild();
-      }
-    } else {
-      lnode = lnode->getSkip();
-    }
-  } while (lnode != nullptr);
-
-  return hits;
+const std::string& TrackingVolume::volumeName() const {
+  return m_name;
 }
-}  // namespace
 
-std::vector<Acts::SurfaceIntersection>
-Acts::TrackingVolume::compatibleSurfacesFromHierarchy(
-    const GeometryContext& gctx, const Vector3& position,
-    const Vector3& direction, double angle,
-    const NavigationOptions<Surface>& options) const {
-  std::vector<SurfaceIntersection> sIntersections;
-  sIntersections.reserve(20);  // arbitrary
-
-  // The limits for this navigation step
-  double pLimit = options.pathLimit;
-  double oLimit = options.overstepLimit;
-
-  if (m_bvhTop == nullptr) {
-    return sIntersections;
-  }
-
-  std::vector<const Volume*> hits;
-  if (angle == 0) {
-    // use ray
-    Ray3D obj(position, direction);
-    hits = intersectSearchHierarchy(std::move(obj), m_bvhTop);
-  } else {
-    Acts::Frustum<ActsScalar, 3, 4> obj(position, direction, angle);
-    hits = intersectSearchHierarchy(std::move(obj), m_bvhTop);
-  }
-
-  // have cells, decompose to surfaces
-  for (const Volume* vol : hits) {
-    const AbstractVolume* avol = dynamic_cast<const AbstractVolume*>(vol);
-    const std::vector<std::shared_ptr<const BoundarySurfaceT<AbstractVolume>>>&
-        boundarySurfaces = avol->boundarySurfaces();
-    for (const auto& bs : boundarySurfaces) {
-      const Surface& srf = bs->surfaceRepresentation();
-      auto sfmi =
-          srf.intersect(gctx, position, direction, BoundaryCheck(false));
-      for (const auto& sfi : sfmi.split()) {
-        if (sfi && sfi.pathLength() > oLimit && sfi.pathLength() <= pLimit) {
-          sIntersections.push_back(sfi);
-        }
-      }
-    }
-  }
-
-  // Sort according to the path length
-  std::sort(sIntersections.begin(), sIntersections.end(),
-            SurfaceIntersection::forwardOrder);
-
-  return sIntersections;
+const IVolumeMaterial* TrackingVolume::volumeMaterial() const {
+  return m_volumeMaterial.get();
 }
+
+const std::shared_ptr<const IVolumeMaterial>&
+TrackingVolume::volumeMaterialSharedPtr() const {
+  return m_volumeMaterial;
+}
+
+void TrackingVolume::assignVolumeMaterial(
+    std::shared_ptr<const IVolumeMaterial> material) {
+  m_volumeMaterial = std::move(material);
+}
+
+const LayerArray* TrackingVolume::confinedLayers() const {
+  return m_confinedLayers.get();
+}
+
+const MutableTrackingVolumeVector TrackingVolume::denseVolumes() const {
+  return m_confinedDenseVolumes;
+}
+
+std::shared_ptr<const TrackingVolumeArray> TrackingVolume::confinedVolumes()
+    const {
+  return m_confinedVolumes;
+}
+
+const TrackingVolume* TrackingVolume::motherVolume() const {
+  return m_motherVolume;
+}
+
+TrackingVolume* TrackingVolume::motherVolume() {
+  return m_motherVolume;
+}
+
+void TrackingVolume::setMotherVolume(TrackingVolume* mvol) {
+  m_motherVolume = mvol;
+}
+
+const Acts::Layer* TrackingVolume::associatedLayer(
+    const GeometryContext& /*gctx*/, const Vector3& position) const {
+  // confined static layers - highest hierarchy
+  if (m_confinedLayers != nullptr) {
+    return (m_confinedLayers->object(position).get());
+  }
+
+  // return the null pointer
+  return nullptr;
+}
+
+TrackingVolume::VolumeRange TrackingVolume::volumes() const {
+  return VolumeRange{m_volumes};
+}
+
+TrackingVolume::MutableVolumeRange TrackingVolume::volumes() {
+  return MutableVolumeRange{m_volumes};
+}
+
+TrackingVolume& TrackingVolume::addVolume(
+    std::unique_ptr<TrackingVolume> volume) {
+  if (volume->motherVolume() != nullptr) {
+    throw std::invalid_argument("Volume already has a mother volume");
+  }
+
+  volume->setMotherVolume(this);
+  m_volumes.push_back(std::move(volume));
+  return *m_volumes.back();
+}
+
+}  // namespace Acts

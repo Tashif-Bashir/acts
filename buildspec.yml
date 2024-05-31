@@ -1,0 +1,51 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.x
+    commands:
+      - apt-get update && apt-get install -y git-lfs ninja-build ccache tar
+      - pip install pyyaml jinja2
+
+  pre_build:
+    commands:
+      - git lfs install
+      - git submodule update --init --recursive
+      - ccache -z
+
+  build:
+    commands:
+      - mkdir build
+      - cmake -B build -S .
+        -GNinja
+        -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_CXX_FLAGS=-Werror
+        -DCMAKE_CXX_STANDARD=17
+        -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}"
+        -DACTS_ENABLE_LOG_FAILURE_THRESHOLD=ON 
+        -DACTS_BUILD_EVERYTHING=ON
+        -DACTS_BUILD_ODD=ON
+        -DACTS_BUILD_EXAMPLES_PYTHON_BINDINGS=ON
+        -DACTS_BUILD_EXAMPLES_BINARIES=ON
+        -DACTS_BUILD_EXAMPLES_EDM4HEP=ON
+        -DACTS_FORCE_ASSERTIONS=ON
+        -DACTS_BUILD_ANALYSIS_APPS=ON
+        -DACTS_BUILD_PLUGIN_ONNX=ON
+        -DACTS_BUILD_PLUGIN_ACTSVG=ON
+      - cmake --build build
+      - ccache -s
+
+  post_build:
+    commands:
+      - tar czf build.tar.gz -C build --exclude "*.o" --exclude "bin/ActsUnitTest*" --exclude "bin/ActsIntegrationTest*" .
+
+artifacts:
+  files:
+    - build.tar.gz
+
+cache:
+  paths:
+    - '/root/.cache'
+    - 'ccache'

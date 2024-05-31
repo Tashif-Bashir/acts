@@ -23,13 +23,10 @@ phases:
       - ln -s /usr/local/cmake/bin/cpack /usr/local/bin/cpack
       - ln -s /usr/local/cmake/bin/ccmake /usr/local/bin/ccmake
       # Install CVMFS
-      - yum remove -y cvmfs-release.noarch || true
-      - yum install -y https://ecsft.cern.ch/dist/cvmfs/cvmfs-config/cvmfs-config-default-latest.noarch.rpm
-      - yum install -y \
-          https://ecsft.cern.ch/dist/cvmfs/cvmfs-2.10.1/cvmfs-2.10.1-1.el9.x86_64.rpm \
-          https://ecsft.cern.ch/dist/cvmfs/cvmfs-2.10.1/cvmfs-fuse3-2.10.1-1.el9.x86_64.rpm || true
+      - sudo yum install https://ecsft.cern.ch/dist/cvmfs/cvmfs-release/cvmfs-release-latest.noarch.rpm
       - sudo yum install -y cvmfs
-      - cvmfs_config setup
+      
+      - sed -i 's%#+dir:/etc/auto.master.d%+dir:/etc/auto.master.d%' /etc/auto.master
       - systemctl restart autofs
 
   pre_build:

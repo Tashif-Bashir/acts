@@ -23,6 +23,8 @@ phases:
   build:
     commands:
       - mkdir build
+      - export CC="sccache gcc"
+      - export CXX="sccache g++"
       - cmake -B build -S .
         -GNinja
         -DCMAKE_CXX_COMPILER_LAUNCHER=ccache

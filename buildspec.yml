@@ -13,6 +13,13 @@ phases:
       - mv sccache-v0.2.15-x86_64-unknown-linux-musl/sccache /usr/local/bin/
       - chmod +x /usr/local/bin/sccache
       - rm -rf sccache*
+      - curl -L https://github.com/Kitware/CMake/releases/download/v3.26.4/cmake-3.26.4-linux-x86_64.tar.gz -o cmake.tar.gz
+      - tar -xzf cmake.tar.gz
+      - mv cmake-3.26.4-linux-x86_64 /usr/local/cmake
+      - ln -s /usr/local/cmake/bin/cmake /usr/local/bin/cmake
+      - ln -s /usr/local/cmake/bin/ctest /usr/local/bin/ctest
+      - ln -s /usr/local/cmake/bin/cpack /usr/local/bin/cpack
+      - ln -s /usr/local/cmake/bin/ccmake /usr/local/bin/ccmake
 
   pre_build:
     commands:

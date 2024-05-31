@@ -8,24 +8,16 @@ phases:
       - yum install -y epel-release || true
       - yum update -y && yum install -y git-lfs ninja-build tar gcc gcc-c++ make
       - pip install pyyaml jinja2
-      - |
-        echo "Installing ccache from source..."
-        CCACHE_VERSION=4.6.1
-        wget https://github.com/ccache/ccache/releases/download/v$CCACHE_VERSION/ccache-$CCACHE_VERSION.tar.gz
-        tar -xzf ccache-$CCACHE_VERSION.tar.gz
-        cd ccache-$CCACHE_VERSION
-        ./configure
-        make
-        make install
-        cd ..
-        rm -rf ccache-$CCACHE_VERSION*
-      - ccache --version
+      - curl -L https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz -o sccache.tar.gz
+      - tar -xzf sccache.tar.gz
+      - mv sccache-v0.2.15-x86_64-unknown-linux-musl/sccache /usr/local/bin/
+      - rm -rf sccache*
 
   pre_build:
     commands:
       - git lfs install
       - git submodule update --init --recursive
-      - ccache -z
+      - sccache --start-server
 
   build:
     commands:
@@ -48,7 +40,7 @@ phases:
         -DACTS_BUILD_PLUGIN_ONNX=ON
         -DACTS_BUILD_PLUGIN_ACTSVG=ON
       - cmake --build build
-      - ccache -s
+      - sccache -s
 
   post_build:
     commands:
@@ -61,4 +53,4 @@ artifacts:
 cache:
   paths:
     - '/root/.cache'
-    - 'ccache'
+    - 'sccache'

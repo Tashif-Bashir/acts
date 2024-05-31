@@ -28,7 +28,7 @@ phases:
       - yum install -y \
           https://ecsft.cern.ch/dist/cvmfs/cvmfs-2.10.1/cvmfs-2.10.1-1.el9.x86_64.rpm \
           https://ecsft.cern.ch/dist/cvmfs/cvmfs-2.10.1/cvmfs-fuse3-2.10.1-1.el9.x86_64.rpm || true
-      - sed -i 's%#+dir:/etc/auto.master.d%+dir:/etc/auto.master.d%' /etc/auto.master
+      - cvmfs_config setup
       - systemctl restart autofs
 
   pre_build:

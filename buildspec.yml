@@ -8,6 +8,18 @@ phases:
       - yum install -y epel-release || true
       - yum update -y && yum install -y git-lfs ninja-build ccache tar
       - pip install pyyaml jinja2
+      - |
+        echo "Installing ccache from source..."
+        CCACHE_VERSION=4.6.1
+        wget https://github.com/ccache/ccache/releases/download/v$CCACHE_VERSION/ccache-$CCACHE_VERSION.tar.gz
+        tar -xzf ccache-$CCACHE_VERSION.tar.gz
+        cd ccache-$CCACHE_VERSION
+        ./configure
+        make
+        make install
+        cd ..
+        rm -rf ccache-$CCACHE_VERSION*
+      - ccache --version
 
   pre_build:
     commands:

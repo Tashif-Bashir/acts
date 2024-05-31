@@ -5,14 +5,16 @@ phases:
     runtime-versions:
       python: 3.x
     commands:
-      - yum install -y epel-release || true
-      - yum update -y && yum install -y git-lfs ninja-build tar gcc gcc-c++ make
+      - yum update -y
+      - yum install -y git-lfs ninja-build tar gcc gcc-c++ make
       - pip install pyyaml jinja2
+      # Install sccache
       - curl -L https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz -o sccache.tar.gz
       - tar -xzf sccache.tar.gz
       - mv sccache-v0.2.15-x86_64-unknown-linux-musl/sccache /usr/local/bin/
       - chmod +x /usr/local/bin/sccache
       - rm -rf sccache*
+      # Install CMake
       - curl -L https://github.com/Kitware/CMake/releases/download/v3.26.4/cmake-3.26.4-linux-x86_64.tar.gz -o cmake.tar.gz
       - tar -xzf cmake.tar.gz
       - mv cmake-3.26.4-linux-x86_64 /usr/local/cmake
@@ -20,34 +22,45 @@ phases:
       - ln -s /usr/local/cmake/bin/ctest /usr/local/bin/ctest
       - ln -s /usr/local/cmake/bin/cpack /usr/local/bin/cpack
       - ln -s /usr/local/cmake/bin/ccmake /usr/local/bin/ccmake
+      # Install CVMFS
+      - yum remove -y cvmfs-release.noarch || true
+      - yum install -y https://ecsft.cern.ch/dist/cvmfs/cvmfs-config/cvmfs-config-default-latest.noarch.rpm
+      - yum install -y \
+          https://ecsft.cern.ch/dist/cvmfs/cvmfs-2.10.1/cvmfs-2.10.1-1.el9.x86_64.rpm \
+          https://ecsft.cern.ch/dist/cvmfs/cvmfs-2.10.1/cvmfs-fuse3-2.10.1-1.el9.x86_64.rpm || true
+      - sed -i 's%#+dir:/etc/auto.master.d%+dir:/etc/auto.master.d%' /etc/auto.master
+      - systemctl restart autofs
 
   pre_build:
     commands:
       - git lfs install
       - git submodule update --init --recursive
       - sccache --start-server
+      - echo 'CVMFS_REPOSITORIES=atlas.cern.ch,atlas-condb.cern.ch,grid.cern.ch,atlas-nightlies.cern.ch,sft-nightlies.cern.ch,sft.cern.ch' > /etc/cvmfs/default.local
+      - echo 'CVMFS_CLIENT_PROFILE=single' >> /etc/cvmfs/default.local
+      - cvmfs_config probe || systemctl restart autofs
 
   build:
     commands:
       - mkdir build
+      - source /cvmfs/sft.cern.ch/lcg/views/LCG_103/x86_64-centos9-gcc11-opt/setup.sh
       - export CC="sccache gcc"
       - export CXX="sccache g++"
-      - cmake -B build -S .
-        -GNinja
-        -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-        -DCMAKE_BUILD_TYPE=Release
-        -DCMAKE_CXX_FLAGS=-Werror
-        -DCMAKE_CXX_STANDARD=17
-        -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}"
-        -DACTS_ENABLE_LOG_FAILURE_THRESHOLD=ON 
-        -DACTS_BUILD_EVERYTHING=ON
-        -DACTS_BUILD_ODD=ON
-        -DACTS_BUILD_EXAMPLES_PYTHON_BINDINGS=ON
-        -DACTS_BUILD_EXAMPLES_BINARIES=ON
-        -DACTS_BUILD_EXAMPLES_EDM4HEP=ON
-        -DACTS_FORCE_ASSERTIONS=ON
-        -DACTS_BUILD_ANALYSIS_APPS=ON
-        -DACTS_BUILD_PLUGIN_ONNX=ON
+      - cmake -B build -S . \
+        -GNinja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_CXX_FLAGS=-Werror \
+        -DCMAKE_CXX_STANDARD=17 \
+        -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}" \
+        -DACTS_ENABLE_LOG_FAILURE_THRESHOLD=ON \
+        -DACTS_BUILD_EVERYTHING=ON \
+        -DACTS_BUILD_ODD=ON \
+        -DACTS_BUILD_EXAMPLES_PYTHON_BINDINGS=ON \
+        -DACTS_BUILD_EXAMPLES_BINARIES=ON \
+        -DACTS_BUILD_EXAMPLES_EDM4HEP=ON \
+        -DACTS_FORCE_ASSERTIONS=ON \
+        -DACTS_BUILD_ANALYSIS_APPS=ON \
+        -DACTS_BUILD_PLUGIN_ONNX=ON \
         -DACTS_BUILD_PLUGIN_ACTSVG=ON
       - cmake --build build
       - sccache -s
@@ -63,4 +76,4 @@ artifacts:
 cache:
   paths:
     - '/root/.cache'
-    - 'sccache'
+    - '/root/.sccache'

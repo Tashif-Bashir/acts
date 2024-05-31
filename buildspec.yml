@@ -11,6 +11,7 @@ phases:
       - curl -L https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz -o sccache.tar.gz
       - tar -xzf sccache.tar.gz
       - mv sccache-v0.2.15-x86_64-unknown-linux-musl/sccache /usr/local/bin/
+      - chmod +x /usr/local/bin/sccache
       - rm -rf sccache*
 
   pre_build:

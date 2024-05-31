@@ -6,7 +6,7 @@ phases:
       python: 3.x
     commands:
       - yum install -y epel-release || true
-      - yum update -y && yum install -y git-lfs ninja-build ccache tar gcc gcc-c++ make
+      - yum update -y && yum install -y git-lfs ninja-build tar gcc gcc-c++ make
       - pip install pyyaml jinja2
       - |
         echo "Installing ccache from source..."

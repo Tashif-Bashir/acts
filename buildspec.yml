@@ -5,7 +5,7 @@ phases:
     runtime-versions:
       python: 3.x
     commands:
-      - yum install -y epel-release
+      - yum install -y epel-release || true
       - yum update -y && yum install -y git-lfs ninja-build ccache tar
       - pip install pyyaml jinja2
 

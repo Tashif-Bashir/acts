@@ -25,7 +25,6 @@ phases:
       # Install CVMFS
       - sudo yum install https://ecsft.cern.ch/dist/cvmfs/cvmfs-release/cvmfs-release-latest.noarch.rpm --skip-broken
       
-      - sed -i 's%#+dir:/etc/auto.master.d%+dir:/etc/auto.master.d%' /etc/auto.master
       - systemctl restart autofs
 
   pre_build:

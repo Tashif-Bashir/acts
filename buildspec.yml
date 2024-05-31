@@ -28,6 +28,7 @@ phases:
       - yum install -y \
           https://ecsft.cern.ch/dist/cvmfs/cvmfs-2.10.1/cvmfs-2.10.1-1.el9.x86_64.rpm \
           https://ecsft.cern.ch/dist/cvmfs/cvmfs-2.10.1/cvmfs-fuse3-2.10.1-1.el9.x86_64.rpm || true
+      - sudo yum install -y cvmfs
       - cvmfs_config setup
       - systemctl restart autofs
 

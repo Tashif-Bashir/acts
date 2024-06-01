@@ -6,7 +6,7 @@ phases:
       python: 3.x
     commands:
       - yum update -y
-      - yum install -y git-lfs ninja-build tar gcc gcc-c++ make
+      - yum install -y wget git-lfs ninja-build tar gcc gcc-c++ make
       - pip install pyyaml jinja2
       # Install sccache
       - curl -L https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz -o sccache.tar.gz
@@ -24,15 +24,16 @@ phases:
       - ln -s /usr/local/cmake/bin/ccmake /usr/local/bin/ccmake
       
       - yum install -y boost-devel
-
-      - curl -L https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.tar.gz -o eigen.tar.gz
-      - tar -xzf eigen.tar.gz
-      - mkdir -p /usr/local/eigen3
-      - mv eigen-3.3.7/Eigen /usr/local/eigen3/Eigen
-      - mv eigen-3.3.7/cmake /usr/local/eigen3/cmake
-
-      - if [ ! -f /usr/local/eigen3/cmake/Eigen3Config.cmake ]; then echo "Creating Eigen3Config.cmake"; echo "set(EIGEN3_INCLUDE_DIR \"/usr/local/eigen3/Eigen\")" > /usr/local/eigen3/cmake/Eigen3Config.cmake; echo "include(\"\${EIGEN3_INCLUDE_DIR}/Eigen\")" >> /usr/local/eigen3/cmake/Eigen3Config.cmake; echo "set(PACKAGE_VERSION 3.3.7)" >> /usr/local/eigen3/cmake/Eigen3Config.cmake; fi
-
+      
+      - wget https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.tar.gz
+      - tar -xzvf eigen-3.3.7.tar.gz
+      - mkdir eigen-3.3.7/build
+      - cd eigen-3.3.7/build
+      - cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local/eigen3
+      - make -j $(nproc)
+      - make install
+      - cd ../../
+      
   pre_build:
     commands:
       - git lfs install

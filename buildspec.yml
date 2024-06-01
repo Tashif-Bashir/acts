@@ -25,6 +25,10 @@ phases:
       
       - yum install -y boost-devel
 
+      - curl -L https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz -o eigen.tar.gz
+      - tar -xzf eigen.tar.gz
+      - mv eigen-3.4.0 /usr/local/eigen
+
   pre_build:
     commands:
       - git lfs install

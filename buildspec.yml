@@ -47,6 +47,7 @@ phases:
         -DCMAKE_CXX_FLAGS=-Werror \
         -DCMAKE_CXX_STANDARD=17 \
         -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}" \
+        -DCMAKE_PREFIX_PATH="/usr/local/eigen" \
         -DACTS_ENABLE_LOG_FAILURE_THRESHOLD=ON \
         -DACTS_BUILD_EVERYTHING=ON \
         -DACTS_BUILD_ODD=ON \

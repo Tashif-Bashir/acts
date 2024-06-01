@@ -28,10 +28,10 @@ phases:
       - curl -L https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz -o eigen.tar.gz
       - tar -xzf eigen.tar.gz
       - mkdir -p /usr/local/eigen3
-      - mv eigen-3.4.0/Eigen /usr/local/eigen3/Eigen
-      - mv eigen-3.4.0/cmake /usr/local/eigen3/cmake
+      - mv eigen-3.3.7/Eigen /usr/local/eigen3/Eigen
+      - mv eigen-3.3.7/cmake /usr/local/eigen3/cmake
 
-      - if [ ! -f /usr/local/eigen3/cmake/Eigen3Config.cmake ]; then echo "Creating Eigen3Config.cmake"; echo "set(EIGEN3_INCLUDE_DIR \"/usr/local/eigen3/Eigen\")" > /usr/local/eigen3/cmake/Eigen3Config.cmake; echo "include(\"\${EIGEN3_INCLUDE_DIR}/Eigen\")" >> /usr/local/eigen3/cmake/Eigen3Config.cmake; fi
+      - if [ ! -f /usr/local/eigen3/cmake/Eigen3Config.cmake ]; then echo "Creating Eigen3Config.cmake"; echo "set(EIGEN3_INCLUDE_DIR \"/usr/local/eigen3/Eigen\")" > /usr/local/eigen3/cmake/Eigen3Config.cmake; echo "include(\"\${EIGEN3_INCLUDE_DIR}/Eigen\")" >> /usr/local/eigen3/cmake/Eigen3Config.cmake; echo "set(PACKAGE_VERSION 3.3.7)" >> /usr/local/eigen3/cmake/Eigen3Config.cmake; fi
 
   pre_build:
     commands:

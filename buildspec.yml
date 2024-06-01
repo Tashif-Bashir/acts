@@ -22,24 +22,18 @@ phases:
       - ln -s /usr/local/cmake/bin/ctest /usr/local/bin/ctest
       - ln -s /usr/local/cmake/bin/cpack /usr/local/bin/cpack
       - ln -s /usr/local/cmake/bin/ccmake /usr/local/bin/ccmake
-      # Install CVMFS
-      - sudo yum install https://ecsft.cern.ch/dist/cvmfs/cvmfs-release/cvmfs-release-latest.noarch.rpm --skip-broken
-      
-      - systemctl restart autofs
+
 
   pre_build:
     commands:
       - git lfs install
       - git submodule update --init --recursive
       - sccache --start-server
-      - echo 'CVMFS_REPOSITORIES=atlas.cern.ch,atlas-condb.cern.ch,grid.cern.ch,atlas-nightlies.cern.ch,sft-nightlies.cern.ch,sft.cern.ch' > /etc/cvmfs/default.local
-      - echo 'CVMFS_CLIENT_PROFILE=single' >> /etc/cvmfs/default.local
-      - cvmfs_config probe || systemctl restart autofs
+
 
   build:
     commands:
       - mkdir build
-      - source /cvmfs/sft.cern.ch/lcg/views/LCG_103/x86_64-centos9-gcc11-opt/setup.sh
       - export CC="sccache gcc"
       - export CXX="sccache g++"
       - cmake -B build -S . \

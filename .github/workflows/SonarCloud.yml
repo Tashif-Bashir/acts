@@ -46,7 +46,7 @@ jobs:
           mkdir build-linux
           cmake -S . -B build-linux -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -D ACTS_USE_SYSTEM_BOOST=OFF -D ACTS_USE_SYSTEM_EIGEN3=OFF -D ACTS_BUILD_UNITTESTS=ON -D ACTS_BUILD_INTEGRATIONTESTS=ON
           mv build-linux/compile_commands.json ..
-          cat build-linux/compile_commands.json
+          cat /home/runner/work/acts/acts/build-linux/compile_commands.json
           build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }}  cmake --build build-linux --clean-first -j $(nproc)
 
       - name: Run tests to generate coverage statistics
@@ -65,6 +65,6 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           sonar-scanner \
-            -Dsonar.cfamily.compile-commands=build-linux/compile_commands.json \
+            -Dsonar.cfamily.compile-commands=/home/runner/work/acts/acts/build-linux/compile_commands.json \
             --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}" \
             --define sonar.coverageReportPaths=coverage.xml

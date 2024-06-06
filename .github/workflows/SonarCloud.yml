@@ -59,7 +59,7 @@ jobs:
       - name: Collect coverage into one XML report
         run: |
           gcovr --sonarqube > coverage.xml
-          gcovr --sonarqube --root=build-linux --output=coverage.xml
+          gcovr --sonarqube --root=build-linux --output=coverage.xml  --filter="^/home/runner/work/acts/acts/"
           
       - name: Verify XML reprt
         run: cat coverage.xml

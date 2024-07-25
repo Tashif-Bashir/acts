@@ -13,6 +13,14 @@ include(ActsRetrieveVersion)
 
 project(Acts VERSION ${_acts_version} LANGUAGES CXX)
 
+ExternalProject_Add(
+  eigen
+  URL "https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.tar.gz"
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+  # other options...
+)
+
+
 # build options
 
 # all options and compile-time parameters must be defined here for clear

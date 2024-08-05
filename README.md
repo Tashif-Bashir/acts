@@ -77,7 +77,7 @@ The Acts project contains copies of the following external packages:
 -   [OpenDataDetector](https://github.com/acts-project/OpenDataDetector)
     licensed under the MPLv2 license.
 
-### Other Useful Guides
+# Other Useful Guides
 ## SonarCloud Analysis Setup for C++ Repository Using GitHub Actions
 This guide will help you set up SonarCloud analysis for your Acts repository on GitHub using GitHub Actions. Follow the steps below to ensure your code is analyzed for quality, bugs, vulnerabilities, and code smells.
 
@@ -92,7 +92,7 @@ Set Up the Project: Follow the prompts to complete the project setup.
 ## Step 3: Generate a SonarCloud Token
 After linking sonarcloud with your github and selecting the repository, navigate to the project on sonar cloud and click on the settings button from the side bar. 
 Click on 'Analysis Method' and here you will find the Sonar Token and secret. 
-# Alternatively: 
+## Alternatively: 
 Go to Security: In your SonarCloud account, navigate to your account settings and find the 'Security' section.
 Generate a New Token: Click on 'Generate Tokens', give it a name (e.g., 'GitHub Actions Token'), and click 'Generate'. Copy the token and save it for later use.
 
@@ -109,7 +109,7 @@ Name the File: Name your file .github/workflows/sonarcloud-analysis.yml.
 
 ## Step 6: add Workflow Configuration 
 Copy and paste the following YAML code into your new file:
-## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+```sh
 name: Sonar Cloud
 
 on:
@@ -181,11 +181,11 @@ jobs:
           sonar-scanner \
             -Dsonar.cfamily.compile-commands=/home/runner/work/acts/acts/build-linux/compile_commands.json \
             --define sonar.coverageReportPaths=coverage.xml
+```
 
-## >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 ### Step 7: Create Another file named sonar-project.properties and add the following snipet: 
-..................................................................................
+```sh
 sonar.projectKey=
 sonar.organization=
 
@@ -194,7 +194,8 @@ sonar.cfamily.threads=4
 sonar.cfamily.compile-commands=/home/runner/work/acts/acts/build-linux/compile_commands.json
 sonar.coverageReportPaths=coverage.xml
 sonar.exclusions=coverage.xml
-..................................................................................
+```
+
 ## Note here:
 Replace Project Key: Replace YOUR_PROJECT_KEY with the project key from SonarCloud.
 Replace Organization Name: Replace YOUR_ORGANIZATION_NAME with your SonarCloud organization name.

@@ -196,10 +196,6 @@ sonar.coverageReportPaths=coverage.xml
 sonar.exclusions=coverage.xml
 ```
 
-## Note here:
-Replace Project Key: Replace YOUR_PROJECT_KEY with the project key from SonarCloud.
-Replace Organization Name: Replace YOUR_ORGANIZATION_NAME with your SonarCloud organization name.
-
 ## Step 7: Customize the Workflow Configuration
 Replace Project Key: Replace YOUR_PROJECT_KEY with the project key from SonarCloud.
 Replace Organization Name: Replace YOUR_ORGANIZATION_NAME with your SonarCloud organization name.
